@@ -11,7 +11,7 @@ var formSubmitHandler = function (event) {
   var city = cityInputEl.value.trim();
 
   if (city) {
-    getWeather(city);
+    getGeo(city);
 
     // clear old content
     locationContainerEl.textContent = "";
@@ -21,18 +21,46 @@ var formSubmitHandler = function (event) {
   }
 };
 
-var getWeather = function (user) {
+var getGeo = function (city) {
   var apiUrl =
-    "https://api.openweathermap.org/data/2.5/forecast?lat={lat}&lon={lon}&appid={51f87de30811bee1ff96fdfa26701e2d}";
+    "http://api.openweathermap.org/geo/1.0/direct?q=" +
+    city +
+    "&appid=51f87de30811bee1ff96fdfa26701e2d&units=imperial";
+
+  fetch(apiUrl)
+    .then(function (response) {
+      // request was successful
+      if (response.ok) {
+        return response.json();
+      } else {
+        alert("Error: Location Not Found");
+      }
+    })
+    .then(function (data) {
+      console.log(data);
+      getWeather(data);
+      getCurrent(data);
+    })
+    .catch(function (error) {
+      alert("Unable to connect to Open Weather");
+    });
+};
+
+var getWeather = function (latlon) {
+  var apiUrl =
+    "https://api.openweathermap.org/data/2.5/forecast?lat=" +
+    latlon[0].lat +
+    "&lon=" +
+    latlon[0].lon +
+    "&appid=51f87de30811bee1ff96fdfa26701e2d&units=imperial";
   // make a get request to url
   fetch(apiUrl)
     .then(function (response) {
       // request was successful
       if (response.ok) {
-        console.log(response);
         response.json().then(function (data) {
           console.log(data);
-          displayLocations(data, user);
+          displayLocations(data);
         });
       } else {
         alert("Error: Location Not Found");
@@ -43,57 +71,57 @@ var getWeather = function (user) {
     });
 };
 
-var displayLocations = function (locations, searchTerm) {
+getCurrent = function (latlon) {
+  var apiUrl =
+    "https://api.openweathermap.org/data/2.5/weather?lat=" +
+    latlon[0].lat +
+    "&lon=" +
+    latlon[0].lon +
+    "&appid=51f87de30811bee1ff96fdfa26701e2d&units=imperial";
+
+  fetch(apiUrl)
+    .then(function (response) {
+      // request was successful
+      if (response.ok) {
+        return response.json();
+      } else {
+        alert("Error: Location Not Found");
+      }
+    })
+    .then(function (data) {
+      console.log(data);
+    })
+    .catch(function (error) {
+      alert("Unable to get current forecast");
+    });
+};
+
+var displayLocations = function (locations, city) {
   // check if api returned any locations
-  if (locations.length === 0) {
+  if (locations.list.length === 0) {
     locationContainerEl.textContent = "No locations found.";
     return;
   }
 
-  locationSearchTerm.textContent = searchTerm;
+  locationSearchTerm.textContent = city;
 
   // loop over locations
-  for (var i = 0; i < locations.length; i++) {
+  for (var i = 0; i < locations.list.length; i += 8) {
     // format location name
-    var locationName = locations[i].owner.login + "/" + locations[i].name;
-
-    // create a link for each location
-    var locationEl = document.createElement("a");
-    locationEl.classList =
-      "list-item flex-row justify-space-between align-center";
-    locationEl.setAttribute(
-      "href",
-      "./single-location.html?location=" + locationName
-    );
-
-    // create a span element to hold location name
-    var titleEl = document.createElement("span");
-    titleEl.textContent = locationName;
-
-    // append to container
-    locationEl.appendChild(titleEl);
-
-    // create a status element
-    var statusEl = document.createElement("span");
-    statusEl.classList = "flex-row align-center";
-
-    // check if current location has issues or not
-    if (locations[i].open_issues_count > 0) {
-      statusEl.innerHTML =
-        "<i class='fas fa-times status-icon icon-danger'></i>" +
-        locations[i].open_issues_count +
-        " issue(s)";
-    } else {
-      statusEl.innerHTML =
-        "<i class='fas fa-check-square status-icon icon-success'></i>";
-    }
-
-    // append to container
-    locationEl.appendChild(statusEl);
-
-    // append container to the dom
-    locationContainerEl.appendChild(locationEl);
+    var day = locations.list[i];
+    console.log(day);
   }
+  var locationEl = document.createElement("a");
+  locationEl.classList =
+    "list-item flex-row justify-space-between align-center";
+
+  var locationEl = document.createElement("span");
+  locationEl.textContent = city;
+
+  locationEl.appendChild(locationEl);
+
+  var statusEl = document.createElement("span");
+  statusEl.classList = "flex-row align-center";
 };
 
 // add event listeners to form and button container
